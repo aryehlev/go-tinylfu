@@ -2,7 +2,7 @@
 /*
    http://arxiv.org/abs/1512.00727
 */
-package tinylfu
+package main
 
 import (
 	"github.com/dgryski/go-metro"
@@ -62,7 +62,7 @@ func New[V any](size int, samples int, withResize bool) *T[V] {
 		percentage: 6.25,
 		size:       size,
 		lruPct:     lruPct,
-		step:       50000,
+		step:       100,
 
 		withResize: withResize,
 	}
@@ -150,38 +150,46 @@ const resize_gag = 1000
 
 func (t *T[V]) resize1() {
 	var resizes = 0
-	for t.lru.ll.Len() > t.lru.cap && resizes < resize_gag {
+	for t.lru.ll.Len() > t.lru.cap {
 		// reuse the tail item
 		last := t.lru.ll.Back()
 		t.lru.ll.Remove(last)
-		t.slru.add(*last.Value)
+		//delete(t.lru.data, last.Value.key)
+		if t.slru.one.Len() <= (t.slru.onecap) {
+			t.slru.one.PushBack(last.Value)
+		}
 		resizes++
 	}
 
-	for t.slru.one.Len() > (t.slru.onecap) && resizes < 1000 {
+	for t.slru.one.Len() > (t.slru.onecap) {
 		// reuse the tail item
-		last := t.slru.victim()
+		last := t.slru.one.Back()
 		if last == nil {
 			break
 		}
-		if last.Value.listid == 2 {
-			t.slru.two.Remove(last)
-		} else {
-			t.slru.one.Remove(last)
-		}
+		//if last.Value.listid == 2 {
+		//	t.slru.two.Remove(last)
+		//} else {
+		t.slru.one.Remove(last)
+		//delete(t.slru.data, last.Value.key)
+		//}
 		resizes++
-		t.lru.add(*last.Value)
+		if t.lru.ll.Len() <= (t.lru.cap) {
+			t.lru.ll.PushBack(last.Value)
+		}
 	}
 
-	for t.slru.two.Len() > t.slru.twocap && resizes < 1000 {
+	for t.slru.two.Len() > t.slru.twocap {
 		last := t.slru.two.Back()
 		if last == nil {
 			break
 		}
 		t.slru.two.Remove(last)
-
+		//delete(t.slru.data, last.Value.key)
 		resizes++
-		t.lru.add(*last.Value)
+		if t.lru.ll.Len() <= (t.lru.cap) {
+			t.lru.ll.PushBack(last.Value)
+		}
 	}
 }
 

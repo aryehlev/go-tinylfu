@@ -1,4 +1,4 @@
-package tinylfu
+package main
 
 // Cache is an LRU cache.  It is not safe for concurrent access.
 type lruCache[V any] struct {

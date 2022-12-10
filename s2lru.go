@@ -1,4 +1,4 @@
-package tinylfu
+package main
 
 type slruItem[V any] struct {
 	listid int
@@ -83,6 +83,17 @@ func (slru *slruCache[V]) add(newitem slruItem[V]) {
 }
 
 func (slru *slruCache[V]) victim() *Element[slruItem[V]] {
+
+	if slru.Len() < (slru.onecap + slru.twocap) {
+		return nil
+	}
+
+	v := slru.one.Back()
+
+	return v
+}
+
+func (slru *slruCache[V]) victim3() *Element[slruItem[V]] {
 
 	if slru.Len() < slru.onecap+slru.twocap {
 		return nil
